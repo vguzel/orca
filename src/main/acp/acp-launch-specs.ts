@@ -11,7 +11,12 @@ import type { AcpDialect } from './acp-dialects/acp-dialect'
 import { GROK_ACP_DIALECT } from './acp-dialects/grok-dialect'
 import { OMP_ACP_DIALECT } from './acp-dialects/omp-dialect'
 import { OPENCODE_ACP_DIALECT } from './acp-dialects/opencode-dialect'
-import { directoryAccountBinding, type AcpAccountBinding } from './acp-account-binding'
+import {
+  directoryAccountBinding,
+  gooseConfigDirectoryAccountBinding,
+  type AcpAccountBinding
+} from './acp-account-binding'
+import { GENERIC_ACP_DIALECT } from './acp-dialects/acp-dialect'
 import { openCodeAcpAccountBinding } from '../opencode/opencode-structured-account-home'
 import { scrubOpenCodeAcpEnvironment } from '../opencode/opencode-acp-environment'
 import { openCodeStoredUserMessagesReader } from '../opencode/opencode-acp-stored-messages'
@@ -36,6 +41,7 @@ import {
 /** How an agent lists its models without a session: from its `initialize` answer (plus extension
  *  requests), from a listing command, or not at all. Never `authenticate` or `session/new`. */
 export type AcpModelDiscovery =
+  | { kind: 'ollama'; listingNamesConfiguredModel: true }
   | {
       kind: 'initialize'
       read(
@@ -192,7 +198,22 @@ const OMP_LAUNCH_SPEC: AcpLaunchSpec = {
   compaction: true
 }
 
+const GOOSE_LAUNCH_SPEC: AcpLaunchSpec = {
+  agent: 'goose',
+  command: 'goose',
+  args: () => ['acp'],
+  env: {},
+  dialect: GENERIC_ACP_DIALECT,
+  loginCommand: agentSessionSignInFor('goose')?.loginCommand ?? [],
+  account: gooseConfigDirectoryAccountBinding(),
+  installDirectories: () => [],
+  // Ollama's model list comes from its session-free API, not from starting a Goose ACP session.
+  modelDiscovery: { kind: 'ollama', listingNamesConfiguredModel: true },
+  compaction: true
+}
+
 export const ACP_LAUNCH_SPECS: readonly AcpLaunchSpec[] = [
+  GOOSE_LAUNCH_SPEC,
   GROK_LAUNCH_SPEC,
   OPENCODE_LAUNCH_SPEC,
   OMP_LAUNCH_SPEC

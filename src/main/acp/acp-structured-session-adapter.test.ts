@@ -10,7 +10,7 @@ import {
   AgentSessionAcquisitionRootExitObservedError
 } from '../native-chat/agent-session-wire/structured-agent-session-adapter'
 import { GENERIC_ACP_DIALECT } from './acp-dialects/acp-dialect'
-import { ACP_CHILD_ENV_TO_DELETE } from './acp-launch-specs'
+import { ACP_CHILD_ENV_TO_DELETE, acpLaunchSpecFor } from './acp-launch-specs'
 import { AGENT_HOOK_RUNTIME_ENV_KEYS } from '../ipc/pty/host-env/spawn-env-keys'
 import {
   GROK,
@@ -62,6 +62,41 @@ describe('ACP structured session adapter: acquire', () => {
       cwd: '/workspace/project',
       mcpServers: []
     })
+  })
+
+  it('starts Goose chats as new sessions and never discovers terminal sessions', async () => {
+    const rig = await openAcpAdapterRig({ spec: acpLaunchSpecFor('goose')! })
+
+    const acquired = await rig.acquire()
+
+    expect(acquired.link).toMatchObject({
+      handle: { transport: 'acp', agent: 'goose', nativeId: PROVIDER_SESSION },
+      origin: 'created'
+    })
+    expect(rig.sent('session/new')).toHaveLength(1)
+    expect(rig.sent('session/list')).toHaveLength(0)
+    expect(rig.sent('session/load')).toHaveLength(0)
+  })
+
+  it('reopens only the provider session already recorded for an Orca Goose chat', async () => {
+    const rig = await openAcpAdapterRig({
+      spec: acpLaunchSpecFor('goose')!,
+      launch: {
+        resume: {
+          sessionId: PROVIDER_SESSION,
+          key: 'orca-goose-session',
+          mayBeUnsaved: () => false,
+          unannouncedLosses: () => []
+        }
+      }
+    })
+
+    await rig.acquire()
+
+    expect(rig.sent('session/load')).toHaveLength(1)
+    expect(rig.sent('session/load')[0]?.params).toMatchObject({ sessionId: PROVIDER_SESSION })
+    expect(rig.sent('session/list')).toHaveLength(0)
+    expect(rig.sent('session/new')).toHaveLength(0)
   })
 
   it('launches without any pane identity, so the agent own status hooks stay silent', async () => {

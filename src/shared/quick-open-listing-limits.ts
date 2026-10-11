@@ -1,6 +1,7 @@
 import { GrowingByteBuffer } from '@orca/process-host/growing-byte-buffer'
+import { QUICK_OPEN_LISTING_MAX_RESULTS } from './quick-open-listing-constants'
 
-export const QUICK_OPEN_LISTING_MAX_RESULTS = 20_001
+export { QUICK_OPEN_LISTING_MAX_RESULTS } from './quick-open-listing-constants'
 const QUICK_OPEN_LISTING_MAX_PATH_BYTES = 64 * 1024
 
 export function resolveQuickOpenResultLimit(requested?: number): number {

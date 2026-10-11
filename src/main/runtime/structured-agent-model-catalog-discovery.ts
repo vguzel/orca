@@ -5,6 +5,7 @@ import { createAcpModelCatalogProbe } from '../acp/acp-model-catalog-probe'
 import type { AcpLaunchSpec } from '../acp/acp-launch-specs'
 import { createClaudeModelCatalogProbe } from '../claude/claude-model-catalog-probe'
 import { createCodexModelCatalogProbe } from '../codex/codex-model-catalog-probe'
+import { createOllamaModelCatalogProbe } from '../ollama/ollama-model-catalog-probe'
 import type { AgentModelCatalogDiscovery } from '../native-chat/agent-model-catalog/agent-model-catalog-discovery'
 import type { StructuredAgentModelCatalogContext } from './structured-agent-runtime-registrations'
 
@@ -49,6 +50,18 @@ export function acpModelCatalogDiscovery(
   { deps, environment }: StructuredAgentModelCatalogContext
 ): AgentModelCatalogDiscovery {
   const discovery = spec.modelDiscovery
+  if (discovery.kind === 'ollama') {
+    return {
+      kind: 'probe',
+      listingNamesConfiguredModel: true,
+      probe: createOllamaModelCatalogProbe({
+        resolveLaunchEnv: async () => ({
+          ...(await environment.resolveBaseEnvironment()),
+          ...deps.resolveAgentLaunchEnv?.('goose')
+        })
+      })
+    }
+  }
   if (discovery.kind === 'unavailable') {
     return { kind: 'unavailable', reason: discovery.reason }
   }

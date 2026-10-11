@@ -1,0 +1,1 @@
+export const QUICK_OPEN_LISTING_MAX_RESULTS = 20_001

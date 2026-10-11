@@ -76,9 +76,8 @@ describe('the model catalog contract on every registration', () => {
       STRUCTURED_AGENT_RUNTIME_REGISTRATIONS,
       context()
     )
-    // Codex's `model/list` names it. Grok's session-free `currentModelId` can differ from what a
-    // session runs, so Grok, like the rest, learns it from a chat with no pick.
-    expect([...listingNamesConfiguredModel].sort()).toEqual(['codex'])
+    // Codex and Goose's Ollama probe name configured defaults; ACP probes learn theirs from a chat.
+    expect([...listingNamesConfiguredModel].sort()).toEqual(['codex', 'goose'])
   })
 
   it('maps an ACP agent with no session-free listing to an unavailable registration', () => {

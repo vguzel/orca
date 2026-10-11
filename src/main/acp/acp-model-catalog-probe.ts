@@ -44,8 +44,12 @@ export function createAcpModelCatalogProbe(
   return async (accountHome, options): Promise<AgentModelCatalogSuccess> => {
     const discovery = spec.modelDiscovery
     // Registered as unavailable instead (`acpModelCatalogDiscovery`); never built for one.
-    if (discovery.kind === 'unavailable') {
-      throw new Error(discovery.reason)
+    if (discovery.kind === 'unavailable' || discovery.kind === 'ollama') {
+      throw new Error(
+        discovery.kind === 'unavailable'
+          ? discovery.reason
+          : 'Ollama model discovery uses its HTTP API'
+      )
     }
     const { command, env, envToDelete } = await resolveAcpLaunchInvocation(spec, accountHome, deps)
     // A listing reads no workspace: the catalog is the account's, whichever chat asks.

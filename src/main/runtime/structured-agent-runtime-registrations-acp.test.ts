@@ -5,12 +5,18 @@ import {
   type StructuredAgentAccountHomeServices
 } from './structured-agent-runtime-registrations'
 import { decideAgentLaunchMode } from '../agent-launch/agent-launch-mode'
+import { acpLaunchSpecFor } from '../acp/acp-launch-specs'
 
 describe('ACP agents in the runtime registrations', () => {
-  it('registers Grok beside Claude and Codex with its declared capabilities', () => {
+  it('registers Goose and Grok beside Claude and Codex with their declared capabilities', () => {
     expect(
       STRUCTURED_AGENT_RUNTIME_REGISTRATIONS.map(({ definition }) => definition.agent)
-    ).toEqual(['pi', 'codex', 'claude', 'grok', 'opencode', 'omp'])
+    ).toEqual(['pi', 'codex', 'claude', 'goose', 'grok', 'opencode', 'omp'])
+    expect(structuredAgentRuntimeRegistration('goose')?.definition).toMatchObject({
+      handleTransport: 'acp',
+      accountHomeVariable: 'GOOSE_CONFIG_DIR',
+      capabilities: { compact: true, imagePrompts: false, steering: 'queue' }
+    })
     expect(structuredAgentRuntimeRegistration('grok')?.definition).toMatchObject({
       handleTransport: 'acp',
       accountHomeVariable: 'GROK_HOME',
@@ -53,6 +59,37 @@ describe('ACP agents in the runtime registrations', () => {
       capabilities: { imagePrompts: false, steering: 'queue', approvalEnforcement: 'orca' }
     })
     expect(registration?.supportsLaunch).toBeTypeOf('function')
+  })
+
+  it('launches Goose through ACP and pins its config directory', async () => {
+    expect(acpLaunchSpecFor('goose')?.args({ fullAccess: false, pluginDir: null })).toEqual(['acp'])
+    const { resolveAccountHome } = structuredAgentRuntimeRegistration('goose')!
+    const unused = (): never => {
+      throw new Error('Goose resolves its account home without the runtime')
+    }
+    const services: StructuredAgentAccountHomeServices = {
+      getClaudeConfigDirectory: unused,
+      prepareCodexLaunchHome: unused,
+      readCodexLaunchHome: unused,
+      workspaceTrustSettings: unused
+    }
+    await expect(
+      resolveAccountHome(
+        {
+          launchEnv: { GOOSE_CONFIG_DIR: '/data/goose' },
+          location: null,
+          purpose: 'read',
+          workspacePath: null
+        },
+        services
+      )
+    ).resolves.toEqual({ variable: 'GOOSE_CONFIG_DIR', path: '/data/goose' })
+    await expect(
+      resolveAccountHome(
+        { launchEnv: {}, location: null, purpose: 'read', workspacePath: null },
+        services
+      )
+    ).resolves.toMatchObject({ path: expect.stringMatching(/[\\/]\.config[\\/]goose$/) })
   })
 
   it('opens OMP as a structured chat with Chat UI on', () => {

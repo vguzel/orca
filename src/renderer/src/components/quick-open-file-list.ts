@@ -18,7 +18,7 @@ import { useShallow } from 'zustand/react/shallow'
 export { isNestedWorktreePath, getNestedWorktreeExcludePaths } from './quick-open-nested-worktrees'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { isQuickOpenRemoteQueryTooLarge } from '@/components/quick-open-search'
-import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../shared/quick-open-listing-limits'
+import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../shared/quick-open-listing-constants'
 import {
   cancelRuntimeFileList,
   listRuntimeFiles,

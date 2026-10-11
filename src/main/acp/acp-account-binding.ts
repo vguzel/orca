@@ -1,3 +1,5 @@
+import { join } from 'node:path'
+
 // How an ACP agent's chats pin their account: what a new chat records, and how a launch points the
 // agent at the account its record pinned. Both run on the machine that runs the agent.
 
@@ -29,6 +31,36 @@ export function directoryAccountBinding(
     resolve: async ({ launchEnv }) => ({
       variable,
       path: resolveStructuredEnvAccountHomePath({ launchEnv, variable, defaultPath: defaultHome })
+    }),
+    environment: (home, env) => {
+      if (!isLegacyAgentSessionAccountHome(home) || home.variable !== variable) {
+        throw new Error(`sessions of this agent pin ${variable}`)
+      }
+      return { ...env, [variable]: home.path }
+    }
+  }
+}
+
+/** Goose stores its config under the platform's application-data directory on Windows. */
+export function gooseConfigDirectoryAccountBinding(): AcpAccountBinding {
+  const variable = 'GOOSE_CONFIG_DIR'
+  return {
+    pin: { accountHomeVariable: variable },
+    resolve: async ({ launchEnv }) => ({
+      variable,
+      path: resolveStructuredEnvAccountHomePath({
+        launchEnv,
+        variable,
+        defaultPath: (homePath) =>
+          process.platform === 'win32'
+            ? join(
+                launchEnv.APPDATA ?? join(homePath, 'AppData', 'Roaming'),
+                'Block',
+                'goose',
+                'config'
+              )
+            : join(homePath, '.config', 'goose')
+      })
     }),
     environment: (home, env) => {
       if (!isLegacyAgentSessionAccountHome(home) || home.variable !== variable) {
