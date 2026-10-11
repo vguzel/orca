@@ -124,6 +124,7 @@ export type AgentModelCatalogEntry = {
  *  the CLI-resolved configured default's, else discovery's, else what a live child reported while
  *  its model offers it. */
 function mergedModels(
+  agent: string,
   discovered: AgentModelCatalogListing | null,
   live: AgentModelCatalogListing | null,
   configured: AgentModelCatalogConfiguredDefault | null
@@ -131,7 +132,12 @@ function mergedModels(
   const liveIsNewer = live !== null && (discovered === null || live.at >= discovered.at)
   const newer = liveIsNewer ? live : discovered
   const older = liveIsNewer ? discovered : live
-  return (newer?.models ?? []).map((model) => {
+  // Goose's Ollama probe classifies chat-capable models; its ACP session list also
+  // contains embedding models, so discovery owns membership when it is available.
+  const membership =
+    agent === 'goose' && discovered?.origin === 'probe' ? discovered.models : (newer?.models ?? [])
+  return membership.map((listedModel) => {
+    const model = newer?.models.find((entry) => entry.id === listedModel.id) ?? listedModel
     const listed = discovered?.models.find((entry) => entry.id === model.id)
     const reported = live?.models.find((entry) => entry.id === model.id)
     const olderEfforts = older?.models.find((entry) => entry.id === model.id)?.efforts ?? []
@@ -182,7 +188,7 @@ export function agentModelCatalogEntry(
     discovered,
     live,
     configured,
-    models: mergedModels(discovered, live, configured),
+    models: mergedModels(agent, discovered, live, configured),
     ...(fastModeSupport ? { fastModeSupport } : {}),
     origin: newer.origin,
     fetchedAt: newer.at

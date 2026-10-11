@@ -57,6 +57,7 @@ test('Goose native chat lists and changes local Ollama models', async ({ orcaPag
   const choices = orcaPage.locator('[data-slot="popover-content"] [role="option"]')
   await expect.poll(() => choices.count(), { timeout: 30_000 }).toBeGreaterThan(1)
   const labels = await choices.allTextContents()
+  expect(labels.join(' ')).not.toMatch(/bge-m3|nomic-embed-text/i)
   const currentModelIndex = labels.findIndex((label) => label.includes('llama3.1'))
   const nextModelIndex = labels.findIndex((label) => !label.includes('llama3.1'))
   expect(currentModelIndex).toBeGreaterThanOrEqual(0)

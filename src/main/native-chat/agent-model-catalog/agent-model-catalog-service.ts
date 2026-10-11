@@ -56,6 +56,8 @@ export type AgentModelCatalogService = {
     /** With no entry yet, answer from the listing this read starts or joins instead of `unknown`;
      *  with a held reason past its TTL, from the probe re-checking it. */
     waitForListing?: boolean
+    /** Wait for a stale entry's refresh. Used when a consumer needs discovery membership. */
+    waitForRefresh?: boolean
     /** Answer only from the saved entry and held reason; start, join or re-check no listing. */
     savedOnly?: boolean
   }) => Promise<AgentSessionModelCatalogResult>
@@ -280,7 +282,16 @@ export function createAgentModelCatalogService(
       let listing = !entry && home ? deps.store.pendingListing(fingerprint) : null
       if (probe && home && !lifetime.signal.aborted) {
         if (entry && deps.store.shouldRefresh(fingerprint)) {
-          void deps.store.refresh(fingerprint, params.agent, probe, listWith(probe, home))
+          const refreshing = deps.store.refresh(
+            fingerprint,
+            params.agent,
+            probe,
+            listWith(probe, home)
+          )
+          if (params.waitForRefresh) {
+            await refreshing
+            entry = deps.store.get(fingerprint) ?? entry
+          }
         } else if (!entry && !listing && !deps.store.hasActiveFailure(fingerprint)) {
           void deps.store.refresh(fingerprint, params.agent, probe, listWith(probe, home))
           listing = deps.store.pendingListing(fingerprint)

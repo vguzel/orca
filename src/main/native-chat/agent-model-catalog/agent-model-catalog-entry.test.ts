@@ -39,3 +39,25 @@ describe('the effort menu of a model whose configured effort one listing lacks',
     expect(merged).not.toHaveProperty('defaultEffort')
   })
 })
+
+describe('Goose Ollama catalog membership', () => {
+  it('keeps embedding-only models out when the live ACP list includes them', () => {
+    const discovered: AgentModelCatalogListing = {
+      models: [{ id: 'llama3.2', label: 'Llama 3.2', isDefault: true, efforts: [] }],
+      origin: 'probe',
+      at: 1
+    }
+    const live: AgentModelCatalogListing = {
+      models: [
+        { id: 'llama3.2', label: 'Llama 3.2', isDefault: false, efforts: [] },
+        { id: 'bge-m3', label: 'BGE M3', isDefault: false, efforts: [] }
+      ],
+      origin: 'live-session',
+      at: 2
+    }
+
+    expect(agentModelCatalogEntry('goose', 'fp', discovered, live, null)?.models).toEqual([
+      expect.objectContaining({ id: 'llama3.2' })
+    ])
+  })
+})

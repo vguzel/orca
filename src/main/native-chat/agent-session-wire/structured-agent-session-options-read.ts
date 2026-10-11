@@ -167,7 +167,16 @@ export async function readStructuredAgentSessionOptions(
       // What a running child listed is its account's catalog too, so the next chat opens warm.
       context.deps.modelCatalog?.recordLiveListing(sessionId, catalogListing)
     }
-    options = answer
+    const provider = context.deps.store.getRecord(sessionId)?.provider
+    if (provider === 'goose' && context.deps.modelCatalog) {
+      const catalog = await context.deps.modelCatalog
+        .read({ agent: 'goose', sessionId, waitForListing: true, waitForRefresh: true })
+        .catch(() => null)
+      options =
+        catalog && catalog.origin !== 'unknown' ? { ...answer, models: catalog.models } : answer
+    } else {
+      options = answer
+    }
   } else {
     options = await readStructuredAgentSessionOptionsAtRest(context.deps, sessionId)
   }
